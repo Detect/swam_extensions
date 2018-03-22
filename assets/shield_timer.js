@@ -145,7 +145,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 			const $shieldInfo = $(`
 				<div id='shieldInfo' style='
-					background-image: url(//raw.githubusercontent.com/Detect/swam_extensions/master/shield.png);
+					background-image: url(//detect.github.io/swam_extensions/assets/shield.png);
 					background-repeat: no-repeat;
 					background-size: contain;
 					display: none;
