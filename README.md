@@ -3,9 +3,15 @@ StarMash Mod Extensions
 
 ## Shield Timer for CTF
 
-Install Extension URL: `https://detect.github.io/swam_extensions/assets/shield_timer.js`
+Install URL: `https://detect.github.io/swam_extensions/assets/shield_timer.js`
 
-When player sees that the shield at enemy base is taken, it will automatically start a countdown timer to when the shield will spawn again. Countdown timer is displayed under the flags captured at the top. It will also send shield timer updates to team chat. Enable/disable automatically sending timer to team chat (enabled by default) using Mod Settings.
+When player sees that the shield at enemy base is taken, it will automatically start a countdown timer to when the shield will spawn again. Countdown timer is displayed under the flags captured at the top. It can also send shield timer to team chat based on user settings.
 
-- If auto-team chat is enabled, pressing `b` key will toggle (pause/resume) sending timer to team chat.
-- If auto-team chat is disabled, pressing `b` key will send current timer to team chat.
+### Mod Settings
+
+- Enable/disable automatically sending timer to team chat (default enabled)
+- Customize intervals (comma separated) in seconds to send timer to team chat (default 60, 30, 20, 10, 5)
+
+### In-Game UI
+- If auto-team chat setting is enabled, pressing `b` key will toggle (pause/resume) sending timer to team chat.
+- If auto-team chat seeting is disabled, pressing `b` key will send current timer to team chat.
