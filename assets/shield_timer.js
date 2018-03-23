@@ -6,24 +6,43 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 !function() {
 	// Settings
+	const DEFAULT_SETTINGS = {
+		isTeamChatEnabled: true,
+		teamChatUpdateIntervals: '60,30,20,10,5'
+	};
+
+	var userSettings = DEFAULT_SETTINGS;
+
 	settingsProvider = () => {
-		const defaultSettings = { isTeamChatEnabled: true };
+		validate = (settings) => {
+			if(typeof(settings.teamChatUpdateIntervals) === 'string') {
+				// Turn CSV string into array of integers
+				settings.teamChatUpdateIntervals = settings.teamChatUpdateIntervals.split(',').map(seconds => parseInt(seconds.trim()));
+			}
 
-		onApply = (settings) => SETTINGS.teamChatEnabled = settings.isTeamChatEnabled;
+			return settings;
+		}
 
-		let sp = new SettingsProvider(defaultSettings, onApply);
+		onApply = (settings) => userSettings = validate(settings);
+
+		let sp = new SettingsProvider(DEFAULT_SETTINGS, onApply);
 		let section = sp.addSection('Shield Timer');
 		section.addBoolean('isTeamChatEnabled', 'Automatically send shield timer to team chat');
+		section.addString('teamChatUpdateIntervals', 'Intervals (seconds) to send team chat (comma separated)', {
+			css: {
+				width: '120px'
+			}
+		});
 
 		return sp;
-	}
+	};
 
 	const extensionConfig = {
 		name: 'Shield Timer for CTF',
 		id: 'ShieldTimer',
 		description: 'Adds enemy base shield spawn timer to UI and chat.',
 		author: 'Detect',
-		version: '0.3',
+		version: '0.4',
 		settingsProvider: settingsProvider()
 	};
 
@@ -33,10 +52,6 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		STARTED: 'Started enemy shield timer',
 		PAUSED: 'Paused sending shield timer',
 		UPDATED: (secondsLeft) => `${secondsLeft} seconds till enemy shield`
-	};
-
-	const SETTINGS = {
-		teamChatEnabled: true
 	};
 
 	const TEAMS = {
@@ -70,7 +85,6 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		KEY_CODE: 66, // 'b'
 		MOB_TYPE: 8,
 		SPAWN_SECONDS: 105 - 2, // two second delay
-		TEAM_CHAT_SECONDS: [90, 60, 30, 20, 10, 5]
 	};
 
 	class ShieldKeyboard {
@@ -87,7 +101,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 			if(!keyPressed) return;
 
-			if(SETTINGS.teamChatEnabled) {
+			if(userSettings.isTeamChatEnabled) {
 				// Toggle sending timer to team chat
 				SWAM.trigger('shieldTimerToggleTeamChat');
 			} else {
@@ -115,7 +129,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		toggle() {
-			const canToggle = SETTINGS.teamChatEnabled;
+			const canToggle = userSettings.isTeamChatEnabled;
 
 			if(!canToggle) return;
 
@@ -136,7 +150,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			var message;
 			const isTimerStarted = secondsLeft === SHIELD.SPAWN_SECONDS;
 			const isTimerStopped = secondsLeft === 0;
-			const shouldSendChatUpdate = SHIELD.TEAM_CHAT_SECONDS.includes(secondsLeft);
+			const shouldSendChatUpdate = userSettings.teamChatUpdateIntervals.includes(parseInt(secondsLeft));
 
 			if(isTimerStarted) {
 				message = MESSAGES.STARTED;
@@ -146,7 +160,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 				message = MESSAGES.SPAWNING;
 			}
 
-			const shouldSendChat = !!message && SETTINGS.teamChatEnabled;
+			const shouldSendChat = !!message && userSettings.isTeamChatEnabled;
 
 			if(shouldSendChat) Network.sendTeam(message);
 		}
