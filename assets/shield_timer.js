@@ -23,7 +23,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		id: 'ShieldTimer',
 		description: 'Adds enemy base shield spawn timer to UI and chat.',
 		author: 'Detect',
-		version: '0.1',
+		version: '0.2',
 		settingsProvider: settingsProvider()
 	};
 
@@ -135,6 +135,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		bindListener() {
+			SWAM.off('shieldTimer', this.setValue);
 			SWAM.on('shieldTimer', this.setValue.bind(this));
 		}
 
@@ -219,13 +220,19 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 	class ShieldWatcher {
 		constructor() {
-			this.bindListener();
+			this.bindListeners();
 		}
 
-		bindListener() {
-			this.overrideMobDestroyed();
-
+		bindMobDestroyed() {
 			SWAM.on('mobDestroyed', this.mobDestroyed.bind(this));
+		}
+
+		bindListeners() {
+			this.overrideMobDestroyed();
+			this.bindMobDestroyed();
+
+			SWAM.on('CTF_MatchEnded', this.pauseListener);
+			SWAM.on('CTF_MatchStarted', this.bindMobDestroyed.bind(this));
 		}
 
 		isBaseShield(shieldPosition, baseShieldBoundingBox) {
@@ -270,6 +277,10 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			window.mobDestroyedOverridden = true;
 		}
 
+		pauseListener() {
+			SWAM.off('mobDestroyed');
+		}
+
 		shieldGone(data) {
 			const shieldPosition = data.pos;
 			const myTeam = Players.getMe().team;
@@ -283,7 +294,6 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 	class ShieldMain {
 		constructor() {
-			new ShieldUI();
 			new ShieldWatcher();
 			new ShieldKeyboard();
 			new ShieldTeamChat();
@@ -291,6 +301,10 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			SWAM.on('gameWipe CTF_MatchStarted CTF_MatchEnded', this.resetComponents);
 
 			console.log('Loaded Shield Timer');
+		}
+
+		bindUI() {
+			new ShieldUI();
 		}
 
 		resetComponents() {
@@ -301,7 +315,10 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 	var shieldMain;
 
 	// Event handlers
-	SWAM.on('gamePrep', () => shieldMain = shieldMain || new ShieldMain());
+	SWAM.on('gamePrep', () => {
+		shieldMain = shieldMain || new ShieldMain();
+		shieldMain.bindUI();
+	});
 
 	// Register mod
 	SWAM.registerExtension(extensionConfig);
