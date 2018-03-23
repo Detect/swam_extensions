@@ -13,7 +13,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 		let sp = new SettingsProvider(defaultSettings, onApply);
 		let section = sp.addSection('Shield Timer');
-		section.addBoolean('isTeamChatEnabled', 'Send shield timer to team chat');
+		section.addBoolean('isTeamChatEnabled', 'Automatically send shield timer to team chat');
 
 		return sp;
 	}
@@ -66,7 +66,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 				}
 			}
 		},
-		FORCE_STOP_KEY_CODE: 66, // 'b'
+		KEY_CODE: 66, // 'b'
 		MOB_TYPE: 8,
 		SPAWN_SECONDS: 105 - 3, // three second delay
 		TEAM_CHAT_SECONDS: [90, 60, 30, 20, 10, 5]
@@ -82,12 +82,18 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		bindKeyUp(event) {
-			const forceStopKeyPressed = (event.keyCode === SHIELD.FORCE_STOP_KEY_CODE);
+			const keyPressed = (event.keyCode === SHIELD.KEY_CODE);
 
-			if(forceStopKeyPressed) {
+			if(!keyPressed) return;
+
+			if(SETTINGS.teamChatEnabled) {
+				// Force stop timer
 				SWAM.trigger('shieldTimerStopped');
 
 				shieldMain.resetComponents();
+			} else {
+				// Send current timer to team chat
+				SWAM.trigger('shieldTimerKeypress');
 			}
 		}
 	}
@@ -100,6 +106,13 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		bindListeners() {
 			SWAM.on('shieldTimerStopped', this.forceStopped.bind(this));
 			SWAM.on('shieldTimer', this.updateChat.bind(this));
+			SWAM.on('shieldTimerKeypress', this.forceChat.bind(this));
+		}
+
+		forceChat() {
+			const message = MESSAGES.UPDATED(this.secondsLeft);
+
+			if(!!this.secondsLeft) Network.sendTeam(message);
 		}
 
 		forceStopped() {
@@ -124,7 +137,9 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 				message = MESSAGES.SPAWNING;
 			}
 
-			if(message && SETTINGS.teamChatEnabled) Network.sendTeam(message);
+			const shouldSendChat = !!message && SETTINGS.teamChatEnabled;
+
+			if(shouldSendChat) Network.sendTeam(message);
 		}
 	}
 
