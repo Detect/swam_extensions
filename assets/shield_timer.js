@@ -23,15 +23,16 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		id: 'ShieldTimer',
 		description: 'Adds enemy base shield spawn timer to UI and chat.',
 		author: 'Detect',
-		version: '0.2',
+		version: '0.3',
 		settingsProvider: settingsProvider()
 	};
 
 	const MESSAGES = {
-		SPAWNING: 'Shield spawning!',
-		STARTED: 'Started shield timer at enemy base',
-		STOPPED: 'Stopped shield timer',
-		UPDATED: (secondsLeft) => `${secondsLeft} seconds till shield`
+		RESUMED: 'Resumed sending shield timer',
+		SPAWNING: 'Enemy shield spawning!',
+		STARTED: 'Started enemy shield timer',
+		PAUSED: 'Paused sending shield timer',
+		UPDATED: (secondsLeft) => `${secondsLeft} seconds till enemy shield`
 	};
 
 	const SETTINGS = {
@@ -68,7 +69,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		},
 		KEY_CODE: 66, // 'b'
 		MOB_TYPE: 8,
-		SPAWN_SECONDS: 105 - 3, // three second delay
+		SPAWN_SECONDS: 105 - 2, // two second delay
 		TEAM_CHAT_SECONDS: [90, 60, 30, 20, 10, 5]
 	};
 
@@ -87,13 +88,11 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			if(!keyPressed) return;
 
 			if(SETTINGS.teamChatEnabled) {
-				// Force stop timer
-				SWAM.trigger('shieldTimerStopped');
-
-				shieldMain.resetComponents();
+				// Toggle sending timer to team chat
+				SWAM.trigger('shieldTimerToggleTeamChat');
 			} else {
 				// Send current timer to team chat
-				SWAM.trigger('shieldTimerKeypress');
+				SWAM.trigger('shieldTimerSendTeamChat');
 			}
 		}
 	}
@@ -104,25 +103,35 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		bindListeners() {
-			SWAM.on('shieldTimerStopped', this.forceStopped.bind(this));
 			SWAM.on('shieldTimer', this.updateChat.bind(this));
-			SWAM.on('shieldTimerKeypress', this.forceChat.bind(this));
+			SWAM.on('shieldTimerToggleTeamChat', this.toggle.bind(this));
+			SWAM.on('shieldTimerSendTeamChat', this.send.bind(this));
 		}
 
-		forceChat() {
+		send() {
 			const message = MESSAGES.UPDATED(this.secondsLeft);
 
 			if(!!this.secondsLeft) Network.sendTeam(message);
 		}
 
-		forceStopped() {
-			if(this.secondsLeft && SETTINGS.teamChatEnabled) Network.sendTeam(MESSAGES.STOPPED);
+		toggle() {
+			const canToggle = SETTINGS.teamChatEnabled;
+
+			if(!canToggle) return;
+
+			const message = this.paused ? MESSAGES.RESUMED : MESSAGES.PAUSED;
+
+			Network.sendTeam(message);
+
+			this.paused = !this.paused;
 		}
 
 		updateChat(secondsLeft) {
 			this.secondsLeft = secondsLeft;
 
-			if(secondsLeft === false) return;
+			const shouldUpdate = (secondsLeft !== false && !this.paused);
+
+			if(!shouldUpdate) return;
 
 			var message;
 			const isTimerStarted = secondsLeft === SHIELD.SPAWN_SECONDS;
