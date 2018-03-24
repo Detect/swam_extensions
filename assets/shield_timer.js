@@ -8,7 +8,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 	// Settings
 	const DEFAULT_SETTINGS = {
 		isTeamChatEnabled: true,
-		teamChatUpdateIntervals: '60,30,20,10,5'
+		teamChatUpdateIntervals: '60,30,10'
 	};
 
 	var userSettings = DEFAULT_SETTINGS;
@@ -42,7 +42,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		id: 'ShieldTimer',
 		description: 'Adds enemy base shield spawn timer to UI and chat.',
 		author: 'Detect',
-		version: '0.4',
+		version: '0.5',
 		settingsProvider: settingsProvider()
 	};
 
@@ -84,7 +84,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		},
 		KEY_CODE: 66, // 'b'
 		MOB_TYPE: 8,
-		SPAWN_SECONDS: 105 - 2, // two second delay
+		SPAWN_SECONDS: 105 - 3, // three second delay
 	};
 
 	class ShieldKeyboard {
