@@ -21,7 +21,7 @@ Deciding whether to switch teams
 		id: 'Shuffle',
 		description: 'Ask to join other team to help balance CTF games.',
 		author: 'Detect',
-		version: '0.1'
+		version: '0.2'
 	};
 
 	const TEAMS = {
@@ -98,7 +98,7 @@ Deciding whether to switch teams
 
 		if(this.numBluePlayers > this.numRedPlayers) {
 			this.teamWeights.blue += WEIGHTS.PLAYERS * Math.max(0, this.numBluePlayers - this.numRedPlayers - 2);
-		} else if(numRedPlayers > numBluePlayers) {
+		} else if(this.numRedPlayers > this.numBluePlayers) {
 			this.teamWeights.red += WEIGHTS.PLAYERS * Math.max(0, this.numRedPlayers - this.numBluePlayers - 2);
 		}
 	}
@@ -123,6 +123,8 @@ Deciding whether to switch teams
 		const myPlayerId = Players.getMe().id;
 		const askToJoinRed = (this.teamWeights.blue > this.teamWeights.red) && isPlayerOnBlueTeam(myPlayerId);
 		const askToJoinBlue = (this.teamWeights.red > this.teamWeights.blue) && isPlayerOnRedTeam(myPlayerId);
+
+		console.log('teamWeights', this.teamWeights, askToJoinRed, askToJoinBlue);
 
 		if(!askToJoinRed && !askToJoinBlue) return;
 
