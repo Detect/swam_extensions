@@ -146,7 +146,7 @@ Deciding whether to switch teams
 
 	getNonSpectatingPlayerIds = () => Object.keys(Players.getIDs()).filter(playerId => !Players.get(playerId).removedFromMap);
 
-	getTeamName = (teamId) => Object.keys(TEAMS).filter(key => TEAMS[key] === teamId)[0].toLowerCase;
+	getTeamName = (teamId) => Object.keys(TEAMS).filter(key => TEAMS[key] === teamId)[0].toLowerCase();
 
 	isPlayerOnBlueTeam = (playerId) => isPlayerOnTeam(playerId, TEAMS.BLUE);
 
