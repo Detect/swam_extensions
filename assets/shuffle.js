@@ -21,7 +21,7 @@ Deciding whether to switch teams
 		id: 'Shuffle',
 		description: 'Ask to join other team to help balance CTF games.',
 		author: 'Detect',
-		version: '0.2'
+		version: '0.3'
 	};
 
 	const TEAMS = {
@@ -157,9 +157,9 @@ Deciding whether to switch teams
 	matchEnded = (data) => setTimeout(checkTeamsBalance, 31000);
 
 	rejoin = () => {
-		Network.reconnect();
+		SWAM.one('gamePrep', () => setTimeout(rejoinMessage, 1000));
 
-		setTimeout(rejoinMessage, 1000);
+		Network.reconnect();
 	}
 
 	rejoinMessage = () => {
