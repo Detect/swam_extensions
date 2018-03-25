@@ -1,7 +1,7 @@
 # SWAM Mod Extensions
 StarMash Mod Extensions
 
-## Shield Timer for CTF (v0.6 beta)
+## Shield Timer for CTF (v0.7 beta)
 
 Install URL: `https://detect.github.io/swam_extensions/assets/shield_timer.js`
 
