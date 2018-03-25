@@ -50,9 +50,9 @@ Deciding whether to switch teams
 				pointer-events: auto;
 				z-index: 1;
 			'>
-				<p>You are on ${this.getMyTeamName()} team.</p>
+				<p>You are on ${getMyTeamName()} team.</p>
 				<p>${this.messages}</p>
-				<p>Do you want to try and re-join ${this.getTeamName(this.teamToJoin)} team?</p>
+				<p>Do you want to try and re-join ${getTeamName(this.teamToJoin)} team?</p>
 				<button class='js-btn-shuffle' style='
 					background-color: #DDD;
 					border-radius: 6px;
