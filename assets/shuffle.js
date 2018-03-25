@@ -21,7 +21,7 @@ Deciding whether to switch teams
 		id: 'Shuffle',
 		description: 'Ask to join other team to help balance CTF games.',
 		author: 'Detect',
-		version: '0.3'
+		version: '0.4'
 	};
 
 	const TEAMS = {

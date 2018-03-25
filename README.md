@@ -20,4 +20,4 @@ When player sees that the shield at enemy base is taken, it will automatically s
 
 Install URL: `https://detect.github.io/swam_extensions/assets/shuffle.js`
 
-After a CTF match ends and teams are shuffled, this will compare the number of blue vs red players. If player is on a team with more than two players than the other team, a modal will popup asking if the player wants to try and re-join the team with less players.
+After a CTF match ends and teams are shuffled, this will compare the number of blue vs red players. If player is on a team with more than two non-spectating players than the other team, a modal will pop up asking if the player wants to try and re-join the team with less players.
