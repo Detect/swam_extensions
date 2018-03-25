@@ -42,7 +42,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		id: 'ShieldTimer',
 		description: 'Adds enemy base shield spawn timer to UI and chat.',
 		author: 'Detect',
-		version: '0.6',
+		version: '0.7',
 		settingsProvider: settingsProvider()
 	};
 
@@ -174,8 +174,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		bindListener() {
-			// SWAM.off('shieldTimerUpdate', this.setValue);
-			SWAM.on('shieldTimerUpdate', this.setValue.bind(this));
+			SWAM.on('shieldTimerUpdate shieldTimerStop', this.setValue.bind(this));
 		}
 
 		createShieldInfo() {
@@ -230,6 +229,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		bindListener() {
 			SWAM.on('shieldTimerUpdate', this.checkToStop.bind(this));
 			SWAM.on('shieldTimerStart', this.start.bind(this));
+			SWAM.on('shieldTimerStop', this.stop.bind(this));
 		}
 
 		checkToStop(secondsLeft) {
@@ -347,7 +347,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 			this.active = false;
 
-			SWAM.on('gameWipe CTF_MatchStarted CTF_MatchEnded', this.stop);
+			SWAM.on('gameWipe CTF_MatchStarted CTF_MatchEnded', this.stopQuiet);
 
 			console.log('Loaded Shield Timer');
 		}
@@ -362,6 +362,10 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 		stop() {
 			SWAM.trigger('shieldTimerUpdate', [false]);
+		}
+
+		stopQuiet() {
+			SWAM.trigger('shieldTimerStop');
 		}
 
 		toggle() {
