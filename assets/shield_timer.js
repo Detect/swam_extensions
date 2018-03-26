@@ -42,7 +42,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		id: 'ShieldTimer',
 		description: 'Adds enemy base shield spawn timer to UI and chat.',
 		author: 'Detect',
-		version: '0.7',
+		version: '0.8',
 		settingsProvider: settingsProvider()
 	};
 
@@ -169,8 +169,32 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 	class ShieldUI {
 		constructor() {
+			this.addStyles();
 			this.createShieldInfo();
 			this.bindListener();
+		}
+
+		addStyles() {
+			const styles = `
+				<style id='shieldTimerSwamModExtensionStyles" type='text/css'>
+					#shieldInfo {
+						background-image: url(//detect.github.io/swam_extensions/assets/shield.png);
+						background-repeat: no-repeat;
+						background-size: contain;
+						display: none;
+						font-weight: 700;
+						height: 30px;
+						left: 43%;
+						line-height: 30px;
+						padding-left: 40px;
+						position: absolute;
+						top: 40px;
+						width: 30px;
+					}
+				</style>
+			`;
+
+			$('body').append(styles);
 		}
 
 		bindListener() {
@@ -182,22 +206,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 			if(shieldInfoExists) return false;
 
-			const $shieldInfo = $(`
-				<div id='shieldInfo' style='
-					background-image: url(//detect.github.io/swam_extensions/assets/shield.png);
-					background-repeat: no-repeat;
-					background-size: contain;
-					display: none;
-					font-weight: 700;
-					height: 30px;
-					left: 43%;
-					line-height: 30px;
-					padding-left: 40px;
-					position: absolute;
-					top: 40px;
-					width: 30px;
-				'></div>
-			`);
+			const $shieldInfo = $("<div id='shieldInfo'/>");
 
 			$('#gamespecific').append($shieldInfo);
 		}

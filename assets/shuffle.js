@@ -21,7 +21,7 @@ Deciding whether to switch teams
 		id: 'Shuffle',
 		description: 'Ask to join other team to help balance CTF games.',
 		author: 'Detect',
-		version: '0.4'
+		version: '0.5'
 	};
 
 	const TEAMS = {
@@ -39,46 +39,46 @@ Deciding whether to switch teams
 
 	addModal = () => {
 		const $modal = `
-			<div id='shuffleModal' style='
-				background-color: rgba(0,0,0,0.8);
-				border: 1px solid #999;
-				border-radius: 12px;
-				top: 150px;
-				padding: 20px 0;
-				position: absolute;
-				width: 100%;
-				pointer-events: auto;
-				z-index: 1;
-			'>
+			<div id='shuffle-modal'>
 				<p>You are on ${getMyTeamName()} team.</p>
 				<p>${this.messages}</p>
 				<p>Do you want to try and re-join ${getTeamName(this.teamToJoin)} team?</p>
-				<button class='js-btn-shuffle' style='
-					background-color: #DDD;
-					border-radius: 6px;
-					cursor: pointer;
-					font-size: 20px;
-					padding: 10px;
-					margin: 10px;
-					width: 100px;
-				'>
-					Yes
-				</button>
-				<button class='js-btn-shuffle' style='
-					background-color: #DDD;
-					border-radius: 6px;
-					cursor: pointer;
-					font-size: 20px;
-					padding: 10px;
-					margin: 10px;
-					width: 100px;
-				'>
-					No
-				</button>
+				<button class='btn-shuffle'>Yes</button>
+				<button class='btn-shuffle'>No</button>
 			</div>
 		`;
 
 		$('#gamespecific').append($modal);
+	}
+
+	addStyles = () => {
+		const styles = `
+			<style id='shuffleSwamModExtensionStyles" type='text/css'>
+				#shuffle-modal {
+					background-color: rgba(0,0,0,0.8);
+					border: 1px solid #999;
+					border-radius: 12px;
+					top: 150px;
+					padding: 20px 0;
+					position: absolute;
+					width: 100%;
+					pointer-events: auto;
+					z-index: 1;
+				}
+
+				.btn-shuffle {
+					background-color: #DDD;
+					border-radius: 6px;
+					cursor: pointer;
+					font-size: 20px;
+					padding: 10px;
+					margin: 10px;
+					width: 100px;
+				}
+			</style>
+		`;
+
+		$('body').append(styles);
 	}
 
 	// TODO
@@ -192,7 +192,8 @@ Deciding whether to switch teams
 	// Event handlers
 	SWAM.on('CTF_MatchEnded', matchEnded);
 
-	$(document).on('click', '.js-btn-shuffle', clickButton);
+	$(document).on('click', '#shuffle-modal button', clickButton);
+	addStyles();
 
 	// Register mod
 	SWAM.registerExtension(extensionConfig);
