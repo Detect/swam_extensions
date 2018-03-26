@@ -1,7 +1,7 @@
 # SWAM Mod Extensions
 StarMash Mod Extensions
 
-## Shield Timer for CTF (v0.7 beta)
+## Shield Timer for CTF (v0.8 beta)
 
 Install URL: `https://detect.github.io/swam_extensions/assets/shield_timer.js`
 
@@ -17,7 +17,7 @@ When player sees that the shield at enemy base is taken, it will automatically s
 - If auto-team chat setting is disabled, pressing `b` key will send current timer to team chat.
 - Pressing `n` key manually toggles (starts/stops) timer.
 
-## Improved Shuffle for CTF (v0.4 alpha)
+## Improved Shuffle for CTF (v0.5 alpha)
 
 Install URL: `https://detect.github.io/swam_extensions/assets/shuffle.js`
 
