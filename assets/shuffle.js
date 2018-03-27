@@ -21,7 +21,7 @@ Deciding whether to switch teams
 		id: 'Shuffle',
 		description: 'Ask to join other team to help balance CTF games.',
 		author: 'Detect',
-		version: '0.5'
+		version: '0.6'
 	};
 
 	const TEAMS = {
@@ -135,7 +135,7 @@ Deciding whether to switch teams
 	clickButton = (event) => {
 		const value = $(event.target).text().trim();
 
-		$('#shuffleModal').remove();
+		$('#shuffle-modal').remove();
 
 		if(value === 'Yes') rejoin();
 	};
