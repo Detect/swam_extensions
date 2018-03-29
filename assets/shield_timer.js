@@ -42,7 +42,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		id: 'ShieldTimer',
 		description: 'Adds enemy base shield spawn timer to UI and chat.',
 		author: 'Detect',
-		version: '0.8',
+		version: '0.9',
 		settingsProvider: settingsProvider()
 	};
 
@@ -50,8 +50,8 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		DISABLED_TEAM_CHAT: 'Disabled shield timer team chat',
 		ENABLED_TEAM_CHAT: 'Enabled shield timer team chat',
 		SHIELD_SPAWNING: 'Enemy shield spawning!',
-		TIMER_STARTED: 'Started enemy shield timer',
-		TIMER_STOPPED: 'Stopped enemy shield timer',
+		TIMER_STARTED: () => `Started enemy shield timer ${new Date().toLocaleTimeString()}`,
+		TIMER_STOPPED: () => `Stopped enemy shield timer ${new Date().toLocaleTimeString()}`,
 		TIMER_UPDATED: (secondsLeft) => `${secondsLeft} seconds till enemy shield`
 	};
 
@@ -89,7 +89,8 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			}
 		},
 		MOB_TYPE: 8,
-		SPAWN_SECONDS: 105 - 3, // three second delay
+		POWERUP_TYPE: 1,
+		SPAWN_SECONDS: 105 - 2, // two second delay
 	};
 
 	class ShieldKeyboard {
@@ -124,11 +125,28 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 		bindListeners() {
 			SWAM.on('shieldTimerUpdate', this.updateTeamChat.bind(this));
+			SWAM.on('shieldTimerUpdate', this.checkStartStop.bind(this));
 			SWAM.on('shieldTimerToggleTeamChat', this.toggleTeamChat.bind(this));
-			SWAM.on('shieldTimerSendTeamChat', this.send.bind(this));
+			SWAM.on('shieldTimerSendTeamChat', this.sendTeamChat.bind(this));
 		}
 
-		send() {
+		checkStartStop() {
+			// Minus one to prevent dupe start messages
+			const isStart = (this.secondsLeft === (SHIELD.SPAWN_SECONDS - 1));
+			const isStop = (this.secondsLeft === false);
+
+			let message;
+
+			if(isStart) {
+				message = MESSAGES.TIMER_STARTED();
+			} else if(isStop) {
+				message = MESSAGES.TIMER_STOPPED();
+			}
+
+			if(!!message) UI.addChatMessage(message);
+		}
+
+		sendTeamChat() {
 			const message = MESSAGES.TIMER_UPDATED(this.secondsLeft);
 
 			if(!!this.secondsLeft) Network.sendTeam(message);
@@ -137,9 +155,9 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		toggleTeamChat() {
 			const message = this.enabled ? MESSAGES.DISABLED_TEAM_CHAT : MESSAGES.ENABLED_TEAM_CHAT;
 
-			Network.sendTeam(message);
-
 			this.enabled = !this.enabled;
+
+			UI.addChatMessage(message);
 		}
 
 		updateTeamChat(secondsLeft) {
@@ -147,17 +165,11 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 			if(!this.enabled || !userSettings.isTeamChatEnabled) return;
 
-			var message;
-			const isTimerStarted = (secondsLeft === SHIELD.SPAWN_SECONDS);
-			const isTimerStopped = (secondsLeft === false);
+			let message;
 			const shouldSendChatUpdate = userSettings.teamChatUpdateIntervals.includes(parseInt(secondsLeft));
 			const isShieldSpawning = ((secondsLeft === 0) && shouldSendChatUpdate);
 
-			if(isTimerStarted) {
-				message = MESSAGES.TIMER_STARTED;
-			} else if(isTimerStopped) {
-				message = MESSAGES.TIMER_STOPPED;
-			} else if(isShieldSpawning) {
+			if(isShieldSpawning) {
 				message = MESSAGES.SHIELD_SPAWNING;
 			} else if(shouldSendChatUpdate) {
 				message = MESSAGES.TIMER_UPDATED(secondsLeft);
@@ -280,16 +292,16 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			this.bindListeners();
 		}
 
-		bindMobDestroyed() {
-			SWAM.on('mobDestroyed', this.mobDestroyed.bind(this));
+		bindShieldEvents() {
+			SWAM.on('mobDestroyed playersPowerup', this.shieldGone.bind(this));
 		}
 
 		bindListeners() {
-			this.overrideMobDestroyed();
-			this.bindMobDestroyed();
+			this.overrideEventHandlers();
+			this.bindShieldEvents();
 
-			SWAM.on('CTF_MatchEnded', this.pauseListener);
-			SWAM.on('CTF_MatchStarted', this.bindMobDestroyed.bind(this));
+			SWAM.on('CTF_MatchEnded', this.unbindShieldEvents.bind(this));
+			SWAM.on('CTF_MatchStarted', this.bindShieldEvents.bind(this));
 		}
 
 		isBaseShield(shieldPosition, baseShieldBoundingBox) {
@@ -314,36 +326,38 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			}
 		}
 
-		mobDestroyed(data) {
-			if(data.type !== SHIELD.MOB_TYPE) return false;
-
-			this.shieldGone(data);
-		}
-
-		overrideMobDestroyed() {
-			if(window.mobDestroyedOverridden) return false;
+		overrideEventHandlers() {
+			if(window.eventHandlersOverridden) return false;
 
 			const mobsDestroy = Mobs.destroy;
+			const playersPowerup = Players.powerup;
 
 			Mobs.destroy = function(data) {
 				mobsDestroy.call(Mobs, data);
-
-				SWAM.trigger('mobDestroyed', [data]);
+				SWAM.trigger('mobDestroyed', ['Mob', data]);
 			};
 
-			window.mobDestroyedOverridden = true;
+			Players.powerup = function(data) {
+				playersPowerup.call(Players, data);
+				SWAM.trigger('playersPowerup', ['Player', data]);
+			};
+
+			window.eventHandlersOverridden = true;
 		}
 
-		pauseListener() {
-			SWAM.off('mobDestroyed');
-		}
+		shieldGone(objectType, data) {
+			if(objectType === 'Mob' && data.type !== SHIELD.MOB_TYPE) return false;
+			if(objectType === 'Player' && data.type !== SHIELD.POWERUP_TYPE) return false;
 
-		shieldGone(data) {
-			const shieldPosition = data.pos;
-			const myTeam = Players.getMe().team;
-			const isEnemyBaseShield = this.isEnemyBaseShield(shieldPosition, myTeam);
+			const me = Players.getMe();
+			const shieldPosition = (objectType === 'Player' ? me.pos : data.pos);
+			const isEnemyBaseShield = this.isEnemyBaseShield(shieldPosition, me.team);
 
 			if(isEnemyBaseShield) shieldMain.start();
+		}
+
+		unbindShieldEvents() {
+			SWAM.off('mobDestroyed playersPowerup');
 		}
 	}
 
