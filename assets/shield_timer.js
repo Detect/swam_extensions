@@ -293,7 +293,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		bindShieldEvents() {
-			SWAM.on('mobDestroyed playersPowerup', this.shieldGone.bind(this));
+			SWAM.on('mobsDestroyed playersPowerup', this.shieldGone.bind(this));
 		}
 
 		bindListeners() {
@@ -334,7 +334,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 			Mobs.destroy = function(data) {
 				mobsDestroy.call(Mobs, data);
-				SWAM.trigger('mobDestroyed', ['Mob', data]);
+				SWAM.trigger('mobsDestroyed', ['Mob', data]);
 			};
 
 			Players.powerup = function(data) {
@@ -357,7 +357,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		unbindShieldEvents() {
-			SWAM.off('mobDestroyed playersPowerup');
+			SWAM.off('mobsDestroyed playersPowerup');
 		}
 	}
 
