@@ -8,7 +8,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 	// Settings
 	const DEFAULT_SETTINGS = {
 		isTeamChatEnabled: true,
-		teamChatUpdateIntervals: '60,30,10,0'
+		teamChatUpdateIntervals: '90,30,10'
 	};
 
 	var userSettings = DEFAULT_SETTINGS;
@@ -42,27 +42,27 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		id: 'ShieldTimer',
 		description: 'Adds enemy base shield spawn timer to UI and chat.',
 		author: 'Detect',
-		version: '0.9',
+		version: '1.0',
 		settingsProvider: settingsProvider()
+	};
+
+	const CHAT_MESSAGES = {
+		TEAM_TYPE: 3,
+	};
+
+	const KEY_CODES = {
+		TOGGLE_TEAM_CHAT: 66, // 'b'
+		TOGGLE_TIMER: 78 // 'n'
 	};
 
 	const MESSAGES = {
 		DISABLED_TEAM_CHAT: 'Disabled shield timer team chat',
 		ENABLED_TEAM_CHAT: 'Enabled shield timer team chat',
 		SHIELD_SPAWNING: 'Enemy shield spawning!',
-		TIMER_STARTED: () => `Started enemy shield timer ${new Date().toLocaleTimeString()}`,
-		TIMER_STOPPED: () => `Stopped enemy shield timer ${new Date().toLocaleTimeString()}`,
+		TIMER_STARTED: (time) => `Started enemy shield timer at ${time}`,
+		TIMER_STOPPED: (time) => `Stopped enemy shield timer at ${time}`,
+		TIMER_SYNCED: (secondsLeft, playerName, time) => `Synced enemy shield timer for ${secondsLeft} seconds by ${playerName} at ${time}`,
 		TIMER_UPDATED: (secondsLeft) => `${secondsLeft} seconds till enemy shield`
-	};
-
-	const TEAMS = {
-		BLUE: 1,
-		RED: 2
-	};
-
-	const KEY_CODES = {
-		TOGGLE_TEAM_CHAT: 66, // 'b'
-		TOGGLE_TIMER: 78 // 'n'
 	};
 
 	const SHIELD = {
@@ -93,6 +93,11 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		SPAWN_SECONDS: 105 - 2, // two second delay
 	};
 
+	const TEAMS = {
+		BLUE: 1,
+		RED: 2
+	};
+
 	class ShieldKeyboard {
 		constructor() {
 			this.bindListener();
@@ -117,30 +122,70 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 	}
 
-	class ShieldTeamChat {
+	class ChatListener {
+		constructor() {
+			this.bindListener();
+		}
+
+		bindListener() {
+			SWAM.on('chatLineAdded', this.checkTimerMessages.bind(this));
+		}
+
+		checkTimerMessages(player, text, type) {
+			const isTeamChat = (type === CHAT_MESSAGES.TEAM_TYPE);
+			const isSelf = (player.id === Players.getMe().id);
+
+			if(!isTeamChat || isSelf) return;
+
+			const updatedMessage = `^${MESSAGES.TIMER_UPDATED('([0-9]+)')}$`;
+			const reUpdatedMessage = new RegExp(updatedMessage);
+			const matches = text.match(reUpdatedMessage);
+
+			if(matches === null) return;
+
+			const secondsLeft = parseInt(matches[1]);
+
+			if(secondsLeft <= 0 || secondsLeft >= SHIELD.SPAWN_SECONDS) return;
+
+			shieldMain.startSynced(player, secondsLeft);
+		}
+	}
+
+	class ShieldChat {
 		constructor() {
 			this.bindListeners();
 			this.enabled = userSettings.isTeamChatEnabled;
 		}
 
 		bindListeners() {
+			SWAM.on('shieldTimerStart', this.checkSynced.bind(this));
+			SWAM.on('shieldTimerSendTeamChat', this.sendTeamChat.bind(this));
+			SWAM.on('shieldTimerToggleTeamChat', this.toggleTeamChat.bind(this));
 			SWAM.on('shieldTimerUpdate', this.updateTeamChat.bind(this));
 			SWAM.on('shieldTimerUpdate', this.checkStartStop.bind(this));
-			SWAM.on('shieldTimerToggleTeamChat', this.toggleTeamChat.bind(this));
-			SWAM.on('shieldTimerSendTeamChat', this.sendTeamChat.bind(this));
+		}
+
+		checkSynced(options) {
+			if(!options || !options.player || !options.secondsLeft) return;
+
+			const time = new Date().toLocaleTimeString();
+			const message = MESSAGES.TIMER_SYNCED(options.secondsLeft, options.player.name, time);
+
+			UI.addChatMessage(message);
 		}
 
 		checkStartStop() {
 			// Minus one to prevent dupe start messages
 			const isStart = (this.secondsLeft === (SHIELD.SPAWN_SECONDS - 1));
 			const isStop = (this.secondsLeft === false);
+			const time = new Date().toLocaleTimeString();
 
 			let message;
 
 			if(isStart) {
-				message = MESSAGES.TIMER_STARTED();
+				message = MESSAGES.TIMER_STARTED(time);
 			} else if(isStop) {
-				message = MESSAGES.TIMER_STOPPED();
+				message = MESSAGES.TIMER_STOPPED(time);
 			}
 
 			if(!!message) UI.addChatMessage(message);
@@ -160,10 +205,10 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			UI.addChatMessage(message);
 		}
 
-		updateTeamChat(secondsLeft) {
+		updateTeamChat(secondsLeft, _syncPlayer) {
 			this.secondsLeft = secondsLeft;
 
-			if(!this.enabled || !userSettings.isTeamChatEnabled) return;
+			if(!this.enabled || !userSettings.isTeamChatEnabled || shieldMain.sync) return;
 
 			let message;
 			const shouldSendChatUpdate = userSettings.teamChatUpdateIntervals.includes(parseInt(secondsLeft));
@@ -231,14 +276,15 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			$('#shieldInfo').show();
 		}
 
-		setValue(value) {
-			if(value) {
-				$('#shieldInfo').text(value);
-
-				this.show();
-			} else {
+		setValue(secondsLeft, syncPlayer) {
+			if(!secondsLeft) {
 				this.hide();
+				return;
 			}
+
+			const text = (syncPlayer !== null) ? `${secondsLeft} (${syncPlayer.name})` : secondsLeft;
+			$('#shieldInfo').text(text);
+			this.show();
 		}
 	}
 
@@ -253,12 +299,12 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			SWAM.on('shieldTimerStop', this.stop.bind(this));
 		}
 
-		checkToStop(secondsLeft) {
+		checkToStop(secondsLeft, _syncPlayer) {
 			if(secondsLeft === 0 || secondsLeft === false) this.stop();
 		}
 
 		countdown() {
-			SWAM.trigger('shieldTimerUpdate', [this.secondsLeft--]);
+			SWAM.trigger('shieldTimerUpdate', [this.secondsLeft--, this.syncPlayer]);
 		}
 
 		restart() {
@@ -266,10 +312,13 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			this.start();
 		}
 
-		start() {
+		start(options) {
 			this.stop();
 
-			this.secondsLeft = SHIELD.SPAWN_SECONDS;
+			const isSync = (!!options && !!options.player && !!options.secondsLeft);
+
+			this.syncPlayer = isSync ? options.player : null;
+			this.secondsLeft = isSync ? options.secondsLeft : SHIELD.SPAWN_SECONDS;
 
 			this.intervalId = setInterval(this.countdown.bind(this), 1000);
 			this.countdown();
@@ -365,10 +414,12 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		constructor() {
 			new ShieldWatcher();
 			new ShieldKeyboard();
-			new ShieldTeamChat();
+			new ShieldChat();
 			new ShieldTimer();
+			new ChatListener();
 
 			this.active = false;
+			this.sync = false;
 
 			SWAM.on('gameWipe CTF_MatchStarted CTF_MatchEnded', this.stopQuiet);
 
@@ -380,11 +431,24 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		start() {
+			this.sync = false;
+
 			SWAM.trigger('shieldTimerStart');
 		}
 
+		startSynced(player, secondsLeft) {
+			if(this.active) return;
+
+			this.sync = true;
+
+			SWAM.trigger('shieldTimerStart', [{
+				player: player,
+				secondsLeft: secondsLeft,
+			}]);
+		}
+
 		stop() {
-			SWAM.trigger('shieldTimerUpdate', [false]);
+			SWAM.trigger('shieldTimerUpdate', [false, null]);
 		}
 
 		stopQuiet() {
