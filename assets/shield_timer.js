@@ -339,18 +339,22 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 	class ShieldWatcher {
 		constructor() {
 			this.bindListeners();
-		}
-
-		bindShieldEvents() {
-			SWAM.on('mobsDestroyed playersPowerup', this.shieldGone.bind(this));
+			this.enable();
 		}
 
 		bindListeners() {
-			this.overrideEventHandlers();
-			this.bindShieldEvents();
+			SWAM.on('mobDestroyed', this.shieldGoneForMob.bind(this));
+			SWAM.on('playerPowerUp', this.shieldGoneForPlayer.bind(this));
+			SWAM.on('CTF_MatchEnded', this.disable.bind(this));
+			SWAM.on('CTF_MatchStarted', this.enable.bind(this));
+		}
 
-			SWAM.on('CTF_MatchEnded', this.unbindShieldEvents.bind(this));
-			SWAM.on('CTF_MatchStarted', this.bindShieldEvents.bind(this));
+		disable() {
+			this.enabled = false;
+		}
+
+		enable() {
+			this.enabled = true;
 		}
 
 		isBaseShield(shieldPosition, baseShieldBoundingBox) {
@@ -375,26 +379,8 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			}
 		}
 
-		overrideEventHandlers() {
-			if(window.eventHandlersOverridden) return false;
-
-			const mobsDestroy = Mobs.destroy;
-			const playersPowerup = Players.powerup;
-
-			Mobs.destroy = function(data) {
-				mobsDestroy.call(Mobs, data);
-				SWAM.trigger('mobsDestroyed', ['Mob', data]);
-			};
-
-			Players.powerup = function(data) {
-				playersPowerup.call(Players, data);
-				SWAM.trigger('playersPowerup', ['Player', data]);
-			};
-
-			window.eventHandlersOverridden = true;
-		}
-
 		shieldGone(objectType, data) {
+			if(!this.enabled) return false;
 			if(objectType === 'Mob' && data.type !== SHIELD.MOB_TYPE) return false;
 			if(objectType === 'Player' && data.type !== SHIELD.POWERUP_TYPE) return false;
 
@@ -405,8 +391,12 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			if(isEnemyBaseShield) shieldMain.start();
 		}
 
-		unbindShieldEvents() {
-			SWAM.off('mobsDestroyed playersPowerup');
+		shieldGoneForMob(data) {
+			this.shieldGone('Mob', data);
+		}
+
+		shieldGoneForPlayer(data) {
+			this.shieldGone('Player', data);
 		}
 	}
 
