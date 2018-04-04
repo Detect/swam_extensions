@@ -3,8 +3,9 @@
 Factors to compare
 
 - number of players on red vs blue
+- number of captures on red vs blue
+
 - TODO: average bounty of players on each team
-- TODO: captures
 - TODO: player.scorePlace .totalKills .killCount .deathCount
 
 Deciding whether to switch teams
@@ -21,7 +22,7 @@ Deciding whether to switch teams
 		id: 'Shuffle',
 		description: 'Ask to join other team to help balance CTF games.',
 		author: 'Detect',
-		version: '0.6'
+		version: '0.7'
 	};
 
 	const TEAMS = {
@@ -40,9 +41,9 @@ Deciding whether to switch teams
 	addModal = () => {
 		const $modal = `
 			<div id='shuffle-modal'>
-				<p>You are on ${getMyTeamName()} team.</p>
+				<p>You are on ${getMyTeamName()} team (${getCaptures(this.myOldTeam)} captures).</p>
 				<p>${this.messages}</p>
-				<p>Do you want to try and re-join ${getTeamName(this.teamToJoin)} team?</p>
+				<p>Do you want to try and re-join ${getTeamName(this.teamToJoin)} team (${getCaptures(this.teamToJoin)} captures)?</p>
 				<button class='btn-shuffle'>Yes</button>
 				<button class='btn-shuffle'>No</button>
 			</div>
@@ -85,14 +86,27 @@ Deciding whether to switch teams
 	checkBounties = () => {
 	}
 
-	// TODO
 	checkCaptures = () => {
+		SWAM.one('capturesUpdated', (data) => {
+			getNumberOfCaptures();
+
+			const numCaptureDifference = Math.abs(this.numBlueCaptures - this.numRedCaptures);
+			const weightDifference = WEIGHTS.CAPTURES * numCaptureDifference;
+
+			if(this.numBlueCaptures > this.numRedCaptures) {
+				this.teamWeights.blue += weightDifference;
+			} else if(this.numRedCaptures > this.numBlueCaptures) {
+				this.teamWeights.red += weightDifference;
+			}
+		});
+
+		getPlayerCaptures();
 	}
 
 	checkNumberOfPlayers = () => {
 		getNumberOfPlayers();
 
-		const message = `There are ${this.numBluePlayers} blue players vs. ${this.numRedPlayers} red players. `
+		const message = `There are ${this.numBluePlayers} blue players vs. ${this.numRedPlayers} red players. `;
 
 		this.messages += message;
 
@@ -111,7 +125,7 @@ Deciding whether to switch teams
 		resetTeamWeights();
 
 		checkNumberOfPlayers();
-		// checkCaptures();
+		checkCaptures();
 		// checkBounties();
 
 		console.log(`Shuffle: ${this.messages}`);
@@ -120,7 +134,8 @@ Deciding whether to switch teams
 	}
 
 	checkTeamsWeightsAndRebalance = () => {
-		const myPlayerId = Players.getMe().id;
+		const me = Players.getMe();
+		const myPlayerId = me.id;
 		const askToJoinRed = (this.teamWeights.blue > this.teamWeights.red) && isPlayerOnBlueTeam(myPlayerId);
 		const askToJoinBlue = (this.teamWeights.red > this.teamWeights.blue) && isPlayerOnRedTeam(myPlayerId);
 
@@ -129,6 +144,7 @@ Deciding whether to switch teams
 		if(!askToJoinRed && !askToJoinBlue) return;
 
 		this.teamToJoin = askToJoinRed ? TEAMS.RED : TEAMS.BLUE;
+
 		addModal();
 	}
 
@@ -140,11 +156,31 @@ Deciding whether to switch teams
 		if(value === 'Yes') rejoin();
 	};
 
+	getCaptures = (teamId) => (teamId === TEAMS.BLUE) ? this.numBlueCaptures : this.numRedCaptures;
+
 	getMyTeamName = () => getTeamName(Players.getMe().team);
+
+	// FIXME
+	getNumberOfCaptures = () => [this.numBlueCaptures, this.numRedCaptures] = partition(getNonSpectatingPlayerIds(), isPlayerOnBlueTeam).map(playerIds => playerIds.length);
 
 	getNumberOfPlayers = () => [this.numBluePlayers, this.numRedPlayers] = partition(getNonSpectatingPlayerIds(), isPlayerOnBlueTeam).map(playerIds => playerIds.length);
 
 	getNonSpectatingPlayerIds = () => Object.keys(Players.getIDs()).filter(playerId => !Players.get(playerId).removedFromMap);
+
+	getPlayerCaptures = () => {
+		SWAM.one('detailedScoreUpdate', (data) => {
+			for(let i in data.scores) {
+				let playerData = data.scores[i];
+				let player = Players.get(playerData.id);
+
+				player.captures = playerData.captures;
+			}
+
+			SWAM.trigger('capturesUpdated');
+		});
+
+		Network.getScores();
+	}
 
 	getTeamName = (teamId) => Object.keys(TEAMS).filter(key => TEAMS[key] === teamId)[0].toLowerCase();
 
