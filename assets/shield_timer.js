@@ -42,7 +42,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		id: 'ShieldTimer',
 		description: 'Adds enemy base shield spawn timer to UI and chat.',
 		author: 'Detect',
-		version: '1.0',
+		version: '1.2',
 		settingsProvider: settingsProvider()
 	};
 
@@ -56,9 +56,10 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 	};
 
 	const MESSAGES = {
-		DISABLED_TEAM_CHAT: 'Disabled shield timer team chat',
-		ENABLED_TEAM_CHAT: 'Enabled shield timer team chat',
+		SHIELD_FOUND: (shield) => `Shield found ${shield.direction} ${shield.time} seconds away.`,
 		SHIELD_SPAWNING: 'Enemy shield spawning!',
+		TEAM_CHAT_DISABLED: 'Disabled shield timer team chat',
+		TEAM_CHAT_ENABLED: 'Enabled shield timer team chat',
 		TIMER_STARTED: (time) => `Started enemy shield timer at ${time}`,
 		TIMER_STOPPED: (time) => `Stopped enemy shield timer at ${time}`,
 		TIMER_SYNCED: (secondsLeft, playerName, time) => `Synced enemy shield timer for ${secondsLeft} seconds by ${playerName} at ${time}`,
@@ -93,6 +94,8 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		SPAWN_SECONDS: 105 - 2, // two second delay
 	};
 
+	const SHIP_SPEED = 350;
+
 	const TEAMS = {
 		BLUE: 1,
 		RED: 2
@@ -113,7 +116,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 			if(toggleTeamChat) {
 				// Toggle team chat or send current timer to team chat
-				const triggerEvent = userSettings.isTeamChatEnabled ? 'shieldTimerToggleTeamChat' : 'shieldTimerSendTeamChat';
+				const triggerEvent = userSettings.isTeamChatEnabled ? 'shieldTimer:teamChat:toggle' : 'shieldTimer:teamChat:send';
 
 				SWAM.trigger(triggerEvent);
 			} else if(toggleTimer) {
@@ -158,11 +161,12 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		bindListeners() {
-			SWAM.on('shieldTimerStart', this.checkSynced.bind(this));
-			SWAM.on('shieldTimerSendTeamChat', this.sendTeamChat.bind(this));
-			SWAM.on('shieldTimerToggleTeamChat', this.toggleTeamChat.bind(this));
-			SWAM.on('shieldTimerUpdate', this.updateTeamChat.bind(this));
-			SWAM.on('shieldTimerUpdate', this.checkStartStop.bind(this));
+			SWAM.on('shieldTimer:enemyShield:start', this.checkSynced.bind(this));
+			SWAM.on('shieldTimer:teamChat:send', this.sendTeamChat.bind(this));
+			SWAM.on('shieldTimer:teamChat:toggle', this.toggleTeamChat.bind(this));
+			SWAM.on('shieldTimer:enemyShield:update', this.updateTeamChat.bind(this));
+			SWAM.on('shieldTimer:enemyShield:update', this.checkStartStop.bind(this));
+			SWAM.on('shieldTimer:externalShield:found', this.foundExternalShield.bind(this));
 		}
 
 		checkSynced(options) {
@@ -191,6 +195,15 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			if(!!message) UI.addChatMessage(message);
 		}
 
+		foundExternalShield(shield) {
+			// Too far away
+			if(shield.time > 10) return;
+
+			const message = MESSAGES.SHIELD_FOUND(shield);
+
+			UI.addChatMessage(message);
+		}
+
 		sendTeamChat() {
 			const message = MESSAGES.TIMER_UPDATED(this.secondsLeft);
 
@@ -198,7 +211,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		toggleTeamChat() {
-			const message = this.enabled ? MESSAGES.DISABLED_TEAM_CHAT : MESSAGES.ENABLED_TEAM_CHAT;
+			const message = this.enabled ? MESSAGES.TEAM_CHAT_DISABLED : MESSAGES.TEAM_CHAT_ENABLED;
 
 			this.enabled = !this.enabled;
 
@@ -255,7 +268,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		bindListener() {
-			SWAM.on('shieldTimerUpdate shieldTimerStop', this.setValue.bind(this));
+			SWAM.on('shieldTimer:enemyShield:update shieldTimer:enemyShield:stop', this.setValue.bind(this));
 		}
 
 		createShieldInfo() {
@@ -294,9 +307,9 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		bindListener() {
-			SWAM.on('shieldTimerUpdate', this.checkToStop.bind(this));
-			SWAM.on('shieldTimerStart', this.start.bind(this));
-			SWAM.on('shieldTimerStop', this.stop.bind(this));
+			SWAM.on('shieldTimer:enemyShield:update', this.checkToStop.bind(this));
+			SWAM.on('shieldTimer:enemyShield:start', this.start.bind(this));
+			SWAM.on('shieldTimer:enemyShield:stop', this.stop.bind(this));
 		}
 
 		checkToStop(secondsLeft, _syncPlayer) {
@@ -304,7 +317,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		countdown() {
-			SWAM.trigger('shieldTimerUpdate', [this.secondsLeft--, this.syncPlayer]);
+			SWAM.trigger('shieldTimer:enemyShield:update', [this.secondsLeft--, this.syncPlayer]);
 		}
 
 		restart() {
@@ -343,6 +356,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		bindListeners() {
+			SWAM.on('mobAdded', this.shieldFoundForMob.bind(this));
 			SWAM.on('mobDestroyed', this.shieldGoneForMob.bind(this));
 			SWAM.on('playerPowerUp', this.shieldGoneForPlayer.bind(this));
 			SWAM.on('CTF_MatchEnded', this.disable.bind(this));
@@ -357,26 +371,80 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			this.enabled = true;
 		}
 
-		isBaseShield(shieldPosition, baseShieldBoundingBox) {
+		getBearingFromPoints(p1, p2) {
+			let theta = Math.atan2(p2.x - p1.x, p1.y - p2.y);
+
+			if (theta < 0.0) theta += 2 * Math.PI;
+
+			const degrees = (180.0 / Math.PI) * theta;
+
+			const adjustedDegrees =  Math.floor((degrees / 45.0) + 0.5);
+			const bearings = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+			const bearing = bearings[(adjustedDegrees % 8)];
+
+			return bearing;
+		}
+
+		isShieldWithin(shieldPosition, boundingBox) {
 			return (
-				(shieldPosition.x >= baseShieldBoundingBox.topLeft.x) &&
-				(shieldPosition.y >= baseShieldBoundingBox.topLeft.y) &&
-				(shieldPosition.x <= baseShieldBoundingBox.bottomRight.x) &&
-				(shieldPosition.y <= baseShieldBoundingBox.bottomRight.y)
+				(shieldPosition.x >= boundingBox.topLeft.x) &&
+				(shieldPosition.y >= boundingBox.topLeft.y) &&
+				(shieldPosition.x <= boundingBox.bottomRight.x) &&
+				(shieldPosition.y <= boundingBox.bottomRight.y)
 			);
 		}
 
 		isEnemyBaseShield(shieldPosition, myTeam) {
 			switch(myTeam) {
 				case TEAMS.BLUE:
-					return this.isBaseShield(shieldPosition, SHIELD.BASE_SPAWN_COORDINATES.RED);
+					return this.isShieldWithin(shieldPosition, SHIELD.BASE_SPAWN_COORDINATES.RED);
 					break;
 				case TEAMS.RED:
-					return this.isBaseShield(shieldPosition, SHIELD.BASE_SPAWN_COORDINATES.BLUE);
+					return this.isShieldWithin(shieldPosition, SHIELD.BASE_SPAWN_COORDINATES.BLUE);
 					break;
 				default:
 					return false;
 			}
+		}
+
+		shieldFoundForMob(data) {
+			if(data.type !== SHIELD.MOB_TYPE) return false;
+
+			const me = Players.getMe();
+			const shieldPosition = {
+				x: data.posX,
+				y: data.posY
+			};
+
+			const [x1, y1] = [AutoPilot.mapCoordX(me.pos.x), AutoPilot.mapCoordY(me.pos.y)];
+			const [x2, y2] = [AutoPilot.mapCoordX(shieldPosition.x), AutoPilot.mapCoordY(shieldPosition.y)];
+
+			const path = AutoPilot.SearchPath(x1, y1, x2, y2);
+
+			var lastPosition = me.pos;
+			var totalDistance = 0;
+
+			for(let i in path) {
+				let nextX = path[i][0] * 100 - 16384 + 50;
+				let nextY = path[i][1] * 100 - 8192 + 50;
+
+				let distance = Tools.distance(lastPosition.x, lastPosition.y, nextX, nextY);
+
+				totalDistance += distance;
+
+				lastPosition = {
+					x: nextX,
+					y: nextY,
+				}
+			}
+
+			const shield = Object.assign({}, shieldPosition, {
+				direction: this.getBearingFromPoints(me.pos, shieldPosition),
+				distance: totalDistance,
+				time: parseInt(totalDistance / SHIP_SPEED),
+			});
+
+			SWAM.trigger('shieldTimer:externalShield:found', [shield]);
 		}
 
 		shieldGone(objectType, data) {
@@ -423,7 +491,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		start() {
 			this.sync = false;
 
-			SWAM.trigger('shieldTimerStart');
+			SWAM.trigger('shieldTimer:enemyShield:start');
 		}
 
 		startSynced(player, secondsLeft) {
@@ -431,18 +499,18 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 			this.sync = true;
 
-			SWAM.trigger('shieldTimerStart', [{
+			SWAM.trigger('shieldTimer:enemyShield:start', [{
 				player: player,
 				secondsLeft: secondsLeft,
 			}]);
 		}
 
 		stop() {
-			SWAM.trigger('shieldTimerUpdate', [false, null]);
+			SWAM.trigger('shieldTimer:enemyShield:update', [false, null]);
 		}
 
 		stopQuiet() {
-			SWAM.trigger('shieldTimerStop');
+			SWAM.trigger('shieldTimer:enemyShield:stop');
 		}
 
 		toggle() {
