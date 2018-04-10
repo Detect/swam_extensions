@@ -7,6 +7,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 !function() {
 	// Settings
 	const DEFAULT_SETTINGS = {
+		isShieldSpawnedEnabled: true,
 		isTeamChatEnabled: true,
 		teamChatUpdateIntervals: '90,30,10'
 	};
@@ -28,6 +29,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		let sp = new SettingsProvider(DEFAULT_SETTINGS, onApply);
 		let section = sp.addSection('Shield Timer');
 		section.addBoolean('isTeamChatEnabled', 'Automatically send shield timer to team chat');
+		section.addBoolean('isShieldSpawnedEnabled', 'Show spawned shield direction/distance messages');
 		section.addString('teamChatUpdateIntervals', 'Intervals (seconds) to send team chat (comma separated)', {
 			css: {
 				width: '120px'
@@ -42,7 +44,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		id: 'ShieldTimer',
 		description: 'Adds enemy base shield spawn timer to UI and chat.',
 		author: 'Detect',
-		version: '1.2',
+		version: '1.3',
 		settingsProvider: settingsProvider()
 	};
 
@@ -166,7 +168,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			SWAM.on('shieldTimer:teamChat:toggle', this.toggleTeamChat.bind(this));
 			SWAM.on('shieldTimer:enemyShield:update', this.updateTeamChat.bind(this));
 			SWAM.on('shieldTimer:enemyShield:update', this.checkStartStop.bind(this));
-			SWAM.on('shieldTimer:externalShield:found', this.foundExternalShield.bind(this));
+			SWAM.on('shieldTimer:externalShield:found', this.foundShield.bind(this));
 		}
 
 		checkSynced(options) {
@@ -195,7 +197,9 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			if(!!message) UI.addChatMessage(message);
 		}
 
-		foundExternalShield(shield) {
+		foundShield(shield) {
+			if(!userSettings.isShieldSpawnedEnabled) return;
+
 			// Too far away
 			if(shield.time > 10) return;
 
