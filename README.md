@@ -26,3 +26,13 @@ Install URL: `https://detect.github.io/swam_extensions/assets/shuffle.js`
 After a CTF match ends and teams are shuffled, this will compare the number of blue vs red players. If player is on a team with more than two non-spectating players than the other team, a modal will pop up asking if the player wants to try and re-join the team with less players.
 
 On re-join, if player successfully switched teams, a general chat message will be sent (ie. Switched to blue to balance teams. 10 blue vs 15 red).
+
+## Spec Captain for CTF v0.1 alpha
+
+Install URL: `https://detect.github.io/swam_extensions/assets/spec_captain.js`
+
+When in spectate, enables keybinds to:
+
+- `1`: toggle between flags
+- `2`: toggle between bases
+- `3`: toggle among top 5 players on leaderboard
