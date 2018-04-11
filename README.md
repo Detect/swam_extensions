@@ -3,7 +3,7 @@ StarMash Mod Extensions
 
 [View issues](https://github.com/Detect/swam_extensions/issues) | [Create new issue](https://github.com/Detect/swam_extensions/issues/new)
 
-## Shield Timer for CTF v1.2
+## Shield Timer for CTF v1.3
 
 Install URL: `https://detect.github.io/swam_extensions/assets/shield_timer.js`
 
