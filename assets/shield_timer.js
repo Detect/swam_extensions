@@ -1,3 +1,4 @@
+"use strict";
 /*
 
 Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z6bb4n
@@ -14,8 +15,8 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 
 	var userSettings = DEFAULT_SETTINGS;
 
-	settingsProvider = () => {
-		validate = (settings) => {
+	const settingsProvider = () => {
+		const validate = (settings) => {
 			if(typeof(settings.teamChatUpdateIntervals) === 'string') {
 				// Turn CSV string into array of integers
 				settings.teamChatUpdateIntervals = settings.teamChatUpdateIntervals.split(',').map(seconds => parseInt(seconds.trim()));
@@ -24,7 +25,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			return settings;
 		}
 
-		onApply = (settings) => userSettings = validate(settings);
+		const onApply = (settings) => userSettings = validate(settings);
 
 		let sp = new SettingsProvider(DEFAULT_SETTINGS, onApply);
 		let section = sp.addSection('Shield Timer');
@@ -44,7 +45,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		id: 'ShieldTimer',
 		description: 'Adds enemy base shield spawn timer to UI and chat.',
 		author: 'Detect',
-		version: '1.3',
+		version: '1.4',
 		settingsProvider: settingsProvider()
 	};
 

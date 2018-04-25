@@ -3,7 +3,7 @@ StarMash Mod Extensions
 
 [View issues](https://github.com/Detect/swam_extensions/issues) | [Create new issue](https://github.com/Detect/swam_extensions/issues/new)
 
-## Shield Timer for CTF v1.3
+## Shield Timer for CTF v1.4
 
 Install URL: `https://detect.github.io/swam_extensions/assets/shield_timer.js`
 
@@ -20,7 +20,7 @@ When player sees that the shield at enemy base is taken, it will automatically s
 - If auto-team chat setting is disabled, pressing `b` key will send current timer to team chat.
 - Pressing `n` key manually toggles (starts/stops) timer.
 
-## Improved Shuffle for CTF v0.6 alpha
+## Improved Shuffle for CTF v0.7 alpha
 
 Install URL: `https://detect.github.io/swam_extensions/assets/shuffle.js`
 

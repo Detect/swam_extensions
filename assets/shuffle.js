@@ -1,3 +1,4 @@
+"use strict";
 /*
 
 Factors to compare
@@ -21,7 +22,7 @@ Deciding whether to switch teams
 		id: 'Shuffle',
 		description: 'Ask to join other team to help balance CTF games.',
 		author: 'Detect',
-		version: '0.6'
+		version: '0.7'
 	};
 
 	const TEAMS = {
@@ -37,7 +38,7 @@ Deciding whether to switch teams
 
 	// Functions
 
-	addModal = () => {
+	const addModal = () => {
 		const $modal = `
 			<div id='shuffle-modal'>
 				<p>You are on ${getMyTeamName()} team.</p>
@@ -51,7 +52,7 @@ Deciding whether to switch teams
 		$('#gamespecific').append($modal);
 	}
 
-	addStyles = () => {
+	const addStyles = () => {
 		const styles = `
 			<style id='shuffleSwamModExtensionStyles" type='text/css'>
 				#shuffle-modal {
@@ -82,14 +83,14 @@ Deciding whether to switch teams
 	}
 
 	// TODO
-	checkBounties = () => {
+	const checkBounties = () => {
 	}
 
 	// TODO
-	checkCaptures = () => {
+	const checkCaptures = () => {
 	}
 
-	checkNumberOfPlayers = () => {
+	const checkNumberOfPlayers = () => {
 		getNumberOfPlayers();
 
 		const message = `There are ${this.numBluePlayers} blue players vs. ${this.numRedPlayers} red players. `
@@ -103,7 +104,7 @@ Deciding whether to switch teams
 		}
 	}
 
-	checkTeamsBalance = () => {
+	const checkTeamsBalance = () => {
 		console.log('Shuffle: Checking teams balance');
 
 		this.myOldTeam = Players.getMe().team;
@@ -119,7 +120,7 @@ Deciding whether to switch teams
 		checkTeamsWeightsAndRebalance();
 	}
 
-	checkTeamsWeightsAndRebalance = () => {
+	const checkTeamsWeightsAndRebalance = () => {
 		const myPlayerId = Players.getMe().id;
 		const askToJoinRed = (this.teamWeights.blue > this.teamWeights.red) && isPlayerOnBlueTeam(myPlayerId);
 		const askToJoinBlue = (this.teamWeights.red > this.teamWeights.blue) && isPlayerOnRedTeam(myPlayerId);
@@ -132,7 +133,7 @@ Deciding whether to switch teams
 		addModal();
 	}
 
-	clickButton = (event) => {
+	const clickButton = (event) => {
 		const value = $(event.target).text().trim();
 
 		$('#shuffle-modal').remove();
@@ -140,29 +141,29 @@ Deciding whether to switch teams
 		if(value === 'Yes') rejoin();
 	};
 
-	getMyTeamName = () => getTeamName(Players.getMe().team);
+	const getMyTeamName = () => getTeamName(Players.getMe().team);
 
-	getNumberOfPlayers = () => [this.numBluePlayers, this.numRedPlayers] = partition(getNonSpectatingPlayerIds(), isPlayerOnBlueTeam).map(playerIds => playerIds.length);
+	const getNumberOfPlayers = () => [this.numBluePlayers, this.numRedPlayers] = partition(getNonSpectatingPlayerIds(), isPlayerOnBlueTeam).map(playerIds => playerIds.length);
 
-	getNonSpectatingPlayerIds = () => Object.keys(Players.getIDs()).filter(playerId => !Players.get(playerId).removedFromMap);
+	const getNonSpectatingPlayerIds = () => Object.keys(Players.getIDs()).filter(playerId => !Players.get(playerId).removedFromMap);
 
-	getTeamName = (teamId) => Object.keys(TEAMS).filter(key => TEAMS[key] === teamId)[0].toLowerCase();
+	const getTeamName = (teamId) => Object.keys(TEAMS).filter(key => TEAMS[key] === teamId)[0].toLowerCase();
 
-	isPlayerOnBlueTeam = (playerId) => isPlayerOnTeam(playerId, TEAMS.BLUE);
+	const isPlayerOnBlueTeam = (playerId) => isPlayerOnTeam(playerId, TEAMS.BLUE);
 
-	isPlayerOnRedTeam = (playerId) => isPlayerOnTeam(playerId, TEAMS.RED);
+	const isPlayerOnRedTeam = (playerId) => isPlayerOnTeam(playerId, TEAMS.RED);
 
-	isPlayerOnTeam = (playerId, teamId) => Players.get(playerId).team === teamId;
+	const isPlayerOnTeam = (playerId, teamId) => Players.get(playerId).team === teamId;
 
-	matchEnded = (data) => setTimeout(checkTeamsBalance, 31000);
+	const matchEnded = (data) => setTimeout(checkTeamsBalance, 31000);
 
-	rejoin = () => {
+	const rejoin = () => {
 		SWAM.one('gamePrep', () => setTimeout(rejoinMessage, 1000));
 
 		Network.reconnect();
 	}
 
-	rejoinMessage = () => {
+	const rejoinMessage = () => {
 		// Didn't change teams
 		if(this.myOldTeam === Players.getMe().team) return;
 
@@ -173,7 +174,7 @@ Deciding whether to switch teams
 		Network.sendChat(message);
 	}
 
-	resetTeamWeights = () => {
+	const resetTeamWeights = () => {
 		this.teamWeights = {
 			blue: 0,
 			red: 0
@@ -183,7 +184,7 @@ Deciding whether to switch teams
 	}
 
 	// Helper functions
-	partition = (array, isValid) => {
+	const partition = (array, isValid) => {
 		return array.reduce(([pass, fail], elem) => {
 			return isValid(elem) ? [[...pass, elem], fail] : [pass, [...fail, elem]];
 		}, [[], []]);
