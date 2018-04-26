@@ -20,7 +20,7 @@ When player sees that the shield at enemy base is taken, it will automatically s
 - If auto-team chat setting is disabled, pressing `b` key will send current timer to team chat.
 - Pressing `n` key manually toggles (starts/stops) timer.
 
-## Improved Shuffle for CTF v0.7 alpha
+## Improved Shuffle for CTF v0.8 alpha
 
 Install URL: `https://detect.github.io/swam_extensions/assets/shuffle.js`
 
