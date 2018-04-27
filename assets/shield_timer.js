@@ -10,7 +10,7 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 	const DEFAULT_SETTINGS = {
 		isShieldSpawnedEnabled: true,
 		isTeamChatEnabled: true,
-		teamChatUpdateIntervals: '90,30,10'
+		teamChatUpdateIntervals: '100,30,10'
 	};
 
 	var userSettings = DEFAULT_SETTINGS;

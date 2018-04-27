@@ -12,7 +12,7 @@ When player sees that the shield at enemy base is taken, it will automatically s
 ### Mod Settings
 
 - Enable/disable automatically sending messages to team chat (default enabled)
-- Customize intervals (comma separated) in seconds to send timer to team chat (default 90, 30, 10)
+- Customize intervals (comma separated) in seconds to send timer to team chat (default 100, 30, 10)
 - Enable/disable sending local messages about spawned shields (default enabled)
 
 ### In-Game UI
