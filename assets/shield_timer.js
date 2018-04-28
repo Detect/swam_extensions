@@ -242,14 +242,8 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 	}
 
-	class ShieldUI {
+	class ShieldStyles {
 		constructor() {
-			this.addStyles();
-			this.createShieldInfo();
-			this.bindListener();
-		}
-
-		addStyles() {
 			const styles = `
 				<style id='shieldTimerSwamModExtensionStyles" type='text/css'>
 					#shieldInfo {
@@ -270,6 +264,13 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			`;
 
 			$('body').append(styles);
+		}
+	}
+
+	class ShieldUI {
+		constructor() {
+			this.createShieldInfo();
+			this.bindListener();
 		}
 
 		bindListener() {
@@ -534,6 +535,8 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		shieldMain = shieldMain || new ShieldMain();
 		shieldMain.bindUI();
 	});
+
+	SWAM.on('gameRunning', () => new ShieldStyles());
 
 	// Register mod
 	SWAM.registerExtension(extensionConfig);
