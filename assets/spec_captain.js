@@ -4,13 +4,13 @@
 		id: 'SpecCaptain',
 		description: 'Keybinds for better spectating.',
 		author: 'Detect',
-		version: '0.1'
+		version: '0.2'
 	};
 
 	const KEY_CODES = {
-		TOGGLE_FLAGS: 49,
-		TOGGLE_BASES: 50,
-		TOGGLE_PLAYERS: 51,
+		TOGGLE_FLAGS: 81, //q
+		TOGGLE_BASES: 87, //w
+		TOGGLE_PLAYERS: 69, //e
 	};
 
 	const TEAMS = {
@@ -54,9 +54,20 @@
 					TOGGLE_IDS.FLAGS = (TOGGLE_IDS.FLAGS === TEAMS.BLUE) ? TEAMS.RED : TEAMS.BLUE;
 				}
 
-				[x, y] = (TOGGLE_IDS.FLAGS === TEAMS.BLUE) ? COORDINATES.FLAGS.BLUE : COORDINATES.FLAGS.RED;
+				const $playerNameWithFlag = (TOGGLE_IDS.FLAGS === TEAMS.BLUE) ? $('#blueflag-name') : $('#redflag-name');
+				const playerNameWithFlag = $playerNameWithFlag.text().trim().replace(/[0-3]\/[0-3]/g, '');
 
-				Graphics.setCamera(x, y);
+				// console.log("playerNameWithFlag", playerNameWithFlag);
+
+				if(playerNameWithFlag !== '') {
+					setTimeout(() => SWAM.setTargetedPlayer(Players.getByName(playerNameWithFlag).id), 250);
+				} else {
+					[x, y] = (TOGGLE_IDS.FLAGS === TEAMS.BLUE) ? COORDINATES.FLAGS.BLUE : COORDINATES.FLAGS.RED;
+
+					// console.log(x,y);
+					setCamera(x, y);
+				}
+
 				break;
 			case KEY_CODES.TOGGLE_BASES:
 				console.log('bases');
@@ -67,7 +78,7 @@
 
 				[x, y] = (TOGGLE_IDS.BASES === TEAMS.BLUE) ? COORDINATES.BASES.BLUE : COORDINATES.BASES.RED;
 
-				Graphics.setCamera(x, y);
+				setCamera(x, y);
 				break;
 			case KEY_CODES.TOGGLE_PLAYERS:
 				console.log('players');
@@ -78,8 +89,28 @@
 		lastKeyCode = event.keyCode;
 	}
 
+	bindCTFFlag = (data) => {
+		if(data.type !== 1) return;
+
+		if(data.flag === TEAMS.BLUE) {
+			COORDINATES.FLAGS.BLUE = [data.posX, data.posY];
+		} else if(data.flag === TEAMS.RED) {
+			COORDINATES.FLAGS.RED = [data.posX, data.posY];
+		};
+	}
+
+	setCamera = (x, y) => {
+		setFreeCamera();
+		setTimeout(() => { Graphics.setCamera(x, y); }, 250);
+	}
+
+	setFreeCamera = () => {
+		SWAM.setTargetedPlayer(game.myID);
+	}
+
 	// Event handlers
 	SWAM.on('keyup', bindKeyUp);
+	SWAM.on('CTF_Flag', bindCTFFlag);
 
 	// Register mod
 	SWAM.registerExtension(extensionConfig);
