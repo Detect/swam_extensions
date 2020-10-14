@@ -9,33 +9,14 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 	// Settings
 	const DEFAULT_SETTINGS = {
 		isShieldSpawnedEnabled: true,
-		isTeamChatEnabled: true,
-		teamChatUpdateIntervals: '100,30,10'
 	};
 
 	var userSettings = DEFAULT_SETTINGS;
 
 	const settingsProvider = () => {
-		const validate = (settings) => {
-			if(typeof(settings.teamChatUpdateIntervals) === 'string') {
-				// Turn CSV string into array of integers
-				settings.teamChatUpdateIntervals = settings.teamChatUpdateIntervals.split(',').map(seconds => parseInt(seconds.trim()));
-			}
-
-			return settings;
-		}
-
-		const onApply = (settings) => userSettings = validate(settings);
-
-		let sp = new SettingsProvider(DEFAULT_SETTINGS, onApply);
+		let sp = new SettingsProvider(DEFAULT_SETTINGS);
 		let section = sp.addSection('Shield Timer');
-		section.addBoolean('isTeamChatEnabled', 'Automatically send shield timer to team chat');
 		section.addBoolean('isShieldSpawnedEnabled', 'Show spawned shield direction/distance messages');
-		section.addString('teamChatUpdateIntervals', 'Intervals (seconds) to send team chat (comma separated)', {
-			css: {
-				width: '120px'
-			}
-		});
 
 		return sp;
 	};
@@ -43,30 +24,20 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 	const extensionConfig = {
 		name: 'Shield Timer for CTF',
 		id: 'ShieldTimer',
-		description: 'Adds enemy base shield spawn timer to UI and chat.',
+		description: 'Adds enemy base shield spawn timer to UI.',
 		author: 'Detect',
-		version: '1.4',
+		version: '1.5',
 		settingsProvider: settingsProvider()
 	};
 
-	const CHAT_MESSAGES = {
-		TEAM_TYPE: 3,
-	};
-
 	const KEY_CODES = {
-		TOGGLE_TEAM_CHAT: 66, // 'b'
 		TOGGLE_TIMER: 78 // 'n'
 	};
 
 	const MESSAGES = {
 		SHIELD_FOUND: (shield) => `Shield found ${shield.direction} ${shield.time} seconds away.`,
-		SHIELD_SPAWNING: 'Enemy shield spawning!',
-		TEAM_CHAT_DISABLED: 'Disabled shield timer team chat',
-		TEAM_CHAT_ENABLED: 'Enabled shield timer team chat',
 		TIMER_STARTED: (time) => `Started enemy shield timer at ${time}`,
 		TIMER_STOPPED: (time) => `Stopped enemy shield timer at ${time}`,
-		TIMER_SYNCED: (secondsLeft, playerName, time) => `Synced enemy shield timer for ${secondsLeft} seconds by ${playerName} at ${time}`,
-		TIMER_UPDATED: (secondsLeft) => `${secondsLeft} seconds till enemy shield`
 	};
 
 	const SHIELD = {
@@ -114,71 +85,22 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 		}
 
 		bindKeyUp(event) {
-			const toggleTeamChat = (event.keyCode === KEY_CODES.TOGGLE_TEAM_CHAT);
 			const toggleTimer = (event.keyCode === KEY_CODES.TOGGLE_TIMER);
 
-			if(toggleTeamChat) {
-				// Toggle team chat or send current timer to team chat
-				const triggerEvent = userSettings.isTeamChatEnabled ? 'shieldTimer:teamChat:toggle' : 'shieldTimer:teamChat:send';
-
-				SWAM.trigger(triggerEvent);
-			} else if(toggleTimer) {
+			if(toggleTimer) {
 				shieldMain.toggle();
 			}
-		}
-	}
-
-	class ChatListener {
-		constructor() {
-			this.bindListener();
-		}
-
-		bindListener() {
-			SWAM.on('chatLineAdded', this.checkTimerMessages.bind(this));
-		}
-
-		checkTimerMessages(player, text, type) {
-			const isTeamChat = (type === CHAT_MESSAGES.TEAM_TYPE);
-			const isSelf = (player.id === Players.getMe().id);
-
-			if(!isTeamChat || isSelf) return;
-
-			const updatedMessage = `^${MESSAGES.TIMER_UPDATED('([0-9]+)')}$`;
-			const reUpdatedMessage = new RegExp(updatedMessage);
-			const matches = text.match(reUpdatedMessage);
-
-			if(matches === null) return;
-
-			const secondsLeft = parseInt(matches[1]);
-
-			if(secondsLeft <= 0 || secondsLeft >= SHIELD.SPAWN_SECONDS) return;
-
-			shieldMain.startSynced(player, secondsLeft);
 		}
 	}
 
 	class ShieldChat {
 		constructor() {
 			this.bindListeners();
-			this.enabled = userSettings.isTeamChatEnabled;
 		}
 
 		bindListeners() {
-			SWAM.on('shieldTimer:enemyShield:start', this.checkSynced.bind(this));
-			SWAM.on('shieldTimer:teamChat:send', this.sendTeamChat.bind(this));
-			SWAM.on('shieldTimer:teamChat:toggle', this.toggleTeamChat.bind(this));
-			SWAM.on('shieldTimer:enemyShield:update', this.updateTeamChat.bind(this));
 			SWAM.on('shieldTimer:enemyShield:update', this.checkStartStop.bind(this));
 			SWAM.on('shieldTimer:externalShield:found', this.foundShield.bind(this));
-		}
-
-		checkSynced(options) {
-			if(!options || !options.player || !options.secondsLeft) return;
-
-			const time = new Date().toLocaleTimeString();
-			const message = MESSAGES.TIMER_SYNCED(options.secondsLeft, options.player.name, time);
-
-			UI.addChatMessage(message);
 		}
 
 		checkStartStop() {
@@ -207,38 +129,6 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			const message = MESSAGES.SHIELD_FOUND(shield);
 
 			UI.addChatMessage(message);
-		}
-
-		sendTeamChat() {
-			const message = MESSAGES.TIMER_UPDATED(this.secondsLeft);
-
-			if(!!this.secondsLeft) Network.sendTeam(message);
-		}
-
-		toggleTeamChat() {
-			const message = this.enabled ? MESSAGES.TEAM_CHAT_DISABLED : MESSAGES.TEAM_CHAT_ENABLED;
-
-			this.enabled = !this.enabled;
-
-			UI.addChatMessage(message);
-		}
-
-		updateTeamChat(secondsLeft, _syncPlayer) {
-			this.secondsLeft = secondsLeft;
-
-			if(!this.enabled || !userSettings.isTeamChatEnabled || shieldMain.sync) return;
-
-			let message;
-			const shouldSendChatUpdate = userSettings.teamChatUpdateIntervals.includes(parseInt(secondsLeft));
-			const isShieldSpawning = ((secondsLeft === 0) && shouldSendChatUpdate);
-
-			if(isShieldSpawning) {
-				message = MESSAGES.SHIELD_SPAWNING;
-			} else if(shouldSendChatUpdate) {
-				message = MESSAGES.TIMER_UPDATED(secondsLeft);
-			}
-
-			if(!!message) Network.sendTeam(message);
 		}
 	}
 
@@ -480,7 +370,6 @@ Thanks to Nuppet for original shield timer UI and idea. https://pastebin.com/01Z
 			new ShieldKeyboard();
 			new ShieldChat();
 			new ShieldTimer();
-			new ChatListener();
 
 			this.active = false;
 			this.sync = false;
